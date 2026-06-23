@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +9,7 @@ import '../../core/errors/error_handler.dart';
 import '../../core/theme/app_colors.dart';
 import '../../providers/car_providers.dart';
 import '../../widgets/error_view.dart';
+import '../../widgets/network_image.dart';
 
 class CarDetailScreen extends ConsumerWidget {
   const CarDetailScreen({super.key, required this.carId});
@@ -67,13 +69,13 @@ class CarDetailScreen extends ConsumerWidget {
                           onTap: () => _openGallery(context, car.images
                               .map((i) => i.url)
                               .toList(), index),
-                          child: CachedNetworkImage(
-                            imageUrl: image.url,
+                          child: AppNetworkImage(
+                            url: image.url,
                             fit: BoxFit.cover,
-                            placeholder: (_, __) => const Center(
+                            placeholder: const Center(
                               child: CircularProgressIndicator(),
                             ),
-                            errorWidget: (_, __, ___) => const Center(
+                            errorWidget: const Center(
                               child: Icon(Icons.broken_image, size: 48),
                             ),
                           ),
@@ -248,7 +250,9 @@ class _FullScreenGallery extends StatelessWidget {
         pageController: PageController(initialPage: initialIndex),
         builder: (context, index) {
           return PhotoViewGalleryPageOptions(
-            imageProvider: CachedNetworkImageProvider(imageUrls[index]),
+            imageProvider: kIsWeb
+                ? NetworkImage(imageUrls[index])
+                : CachedNetworkImageProvider(imageUrls[index]) as ImageProvider,
             minScale: PhotoViewComputedScale.contained,
             maxScale: PhotoViewComputedScale.covered * 2,
           );

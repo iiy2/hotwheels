@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/car_model.dart';
 import '../core/utils/image_utils.dart';
@@ -14,7 +15,7 @@ class UploadCarImage extends _$UploadCarImage {
 
   Future<CarImage?> call({
     required String carId,
-    required File file,
+    required XFile file,
     bool isPrimary = false,
   }) async {
     final user = ref.read(authStateProvider).valueOrNull;
@@ -22,16 +23,20 @@ class UploadCarImage extends _$UploadCarImage {
     final userId = user.uid;
 
     state = const AsyncLoading();
-    final result = await AsyncValue.guard(() async {
+    try {
       final imageId = ImageUtils.generateImageId();
       final storagePath =
           'users/$userId/cars/$carId/$imageId.jpg';
+
+      final Uint8List bytes = await file.readAsBytes();
+      final contentType = file.mimeType ?? ImageUtils.mimeTypeFromExtension(file.name);
 
       final url = await ref.read(storageServiceProvider).uploadCarImage(
             userId: userId,
             carId: carId,
             imageId: imageId,
-            file: file,
+            bytes: bytes,
+            contentType: contentType,
           );
 
       final image = CarImage(
@@ -53,11 +58,12 @@ class UploadCarImage extends _$UploadCarImage {
         );
       }
 
+      state = AsyncData(image);
       return image;
-    });
-
-    state = result;
-    return result.valueOrNull;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
   }
 }
 

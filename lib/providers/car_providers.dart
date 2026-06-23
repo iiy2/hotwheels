@@ -43,11 +43,14 @@ class AddCar extends _$AddCar {
   Future<String?> call(HotWheelsCar car) async {
     final userId = _requireUserId(ref);
     state = const AsyncLoading();
-    final result = await AsyncValue.guard(
-      () => ref.read(firestoreServiceProvider).addCar(userId, car),
-    );
-    state = result;
-    return result.valueOrNull;
+    try {
+      final carId = await ref.read(firestoreServiceProvider).addCar(userId, car);
+      state = AsyncData(carId);
+      return carId;
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
   }
 }
 
@@ -59,9 +62,13 @@ class UpdateCar extends _$UpdateCar {
   Future<void> call(String carId, Map<String, dynamic> data) async {
     final userId = _requireUserId(ref);
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref.read(firestoreServiceProvider).updateCar(userId, carId, data),
-    );
+    try {
+      await ref.read(firestoreServiceProvider).updateCar(userId, carId, data);
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
   }
 }
 
@@ -73,7 +80,7 @@ class DeleteCar extends _$DeleteCar {
   Future<void> call(String carId, List<CarImage> images) async {
     final userId = _requireUserId(ref);
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
+    try {
       // Delete all images from storage first
       if (images.isNotEmpty) {
         await ref
@@ -82,6 +89,10 @@ class DeleteCar extends _$DeleteCar {
       }
       // Then delete the Firestore document
       await ref.read(firestoreServiceProvider).deleteCar(userId, carId);
-    });
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      rethrow;
+    }
   }
 }

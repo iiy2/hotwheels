@@ -1,0 +1,29 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "hotwheels-col-app",
+          "appId": "1:657702521010:android:139001432b8aedd3a861ab",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "hotwheels-col-app",
+          "configurations": {
+            "android": "1:657702521010:android:139001432b8aedd3a861ab",
+            "ios": "1:657702521010:ios:792de5cf1dbb2d5aa861ab",
+            "web": "1:657702521010:web:fa953fdeaa9221b7a861ab"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  }
+}

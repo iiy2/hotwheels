@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "657702521010",
+    "project_id": "hotwheels-col-app",
+    "storage_bucket": "hotwheels-col-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:657702521010:android:139001432b8aedd3a861ab",
+        "android_client_info": {
+          "package_name": "com.hotwheels.hotwheels_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvS8KpnwHsbO_DBNB2kwBoFJocz0HnZ8w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

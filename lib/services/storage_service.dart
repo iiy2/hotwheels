@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../core/constants/storage_paths.dart';
 import '../core/errors/app_exception.dart';
@@ -13,12 +13,13 @@ class StorageService {
     required String userId,
     required String carId,
     required String imageId,
-    required File file,
+    required Uint8List bytes,
+    String contentType = 'image/jpeg',
   }) async {
     try {
       final path = StoragePaths.carImage(userId, carId, imageId);
       final ref = _storage.ref(path);
-      await ref.putFile(file);
+      await ref.putData(bytes, SettableMetadata(contentType: contentType));
       return await ref.getDownloadURL();
     } catch (e) {
       throw StorageException('Failed to upload image', e);

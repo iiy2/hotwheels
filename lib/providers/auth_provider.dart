@@ -22,9 +22,12 @@ class SignIn extends _$SignIn {
 
   Future<void> withGoogle() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref.read(authServiceProvider).signInWithGoogle(),
-    );
+    try {
+      await ref.read(authServiceProvider).signInWithGoogle();
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
   }
 }
 
@@ -35,8 +38,11 @@ class SignOut extends _$SignOut {
 
   Future<void> call() async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(
-      () => ref.read(authServiceProvider).signOut(),
-    );
+    try {
+      await ref.read(authServiceProvider).signOut();
+      state = const AsyncData(null);
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
   }
 }

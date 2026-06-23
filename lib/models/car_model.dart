@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'car_model.freezed.dart';
@@ -37,7 +38,18 @@ abstract class HotWheelsCar with _$HotWheelsCar {
 
   factory HotWheelsCar.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    return HotWheelsCar.fromJson({...data, 'id': doc.id});
+    final imagesRaw = data['images'];
+    debugPrint('[PARSE] doc=${doc.id} imagesType=${imagesRaw.runtimeType} imagesLen=${imagesRaw is List ? imagesRaw.length : "N/A"}');
+    if (imagesRaw is List && imagesRaw.isNotEmpty) {
+      debugPrint('[PARSE] first image type=${imagesRaw.first.runtimeType}');
+      debugPrint('[PARSE] first image data=${imagesRaw.first}');
+    }
+    final car = HotWheelsCar.fromJson({...data, 'id': doc.id});
+    debugPrint('[PARSE] doc=${doc.id} AFTER fromJson => images.length=${car.images.length}');
+    if (car.images.isNotEmpty) {
+      debugPrint('[PARSE] first parsed image url=${car.images.first.url}');
+    }
+    return car;
   }
 }
 

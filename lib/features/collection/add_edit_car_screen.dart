@@ -1,14 +1,21 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../core/errors/error_handler.dart';
 import '../../core/utils/image_utils.dart';
 import '../../core/utils/validators.dart';
 import '../../models/car_model.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/car_providers.dart';
-import '../../providers/image_providers.dart';
+
+class _PendingImage {
+  _PendingImage(this.xfile, this.bytes);
+  final XFile xfile;
+  final Uint8List bytes;
+}
 
 class AddEditCarScreen extends ConsumerStatefulWidget {
   const AddEditCarScreen({super.key, this.carId});
@@ -29,7 +36,7 @@ class _AddEditCarScreenState extends ConsumerState<AddEditCarScreen> {
   final _notesController = TextEditingController();
   final _picker = ImagePicker();
 
-  final List<File> _pendingImages = [];
+  final List<_PendingImage> _pendingImages = [];
   bool _initialized = false;
 
   @override
@@ -58,16 +65,19 @@ class _AddEditCarScreenState extends ConsumerState<AddEditCarScreen> {
       imageQuality: 85,
     );
     if (picked != null) {
-      final file = File(picked.path);
-      if (!ImageUtils.isValidImageSize(file)) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Image must be under 10 MB')),
-          );
+      if (!kIsWeb) {
+        final file = File(picked.path);
+        if (!ImageUtils.isValidImageSize(file)) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Image must be under 10 MB')),
+            );
+          }
+          return;
         }
-        return;
       }
-      setState(() => _pendingImages.add(file));
+      final bytes = await picked.readAsBytes();
+      setState(() => _pendingImages.add(_PendingImage(picked, bytes)));
     }
   }
 
@@ -79,12 +89,50 @@ class _AddEditCarScreenState extends ConsumerState<AddEditCarScreen> {
       imageQuality: 85,
     );
     if (picked != null) {
-      setState(() => _pendingImages.add(File(picked.path)));
+      final bytes = await picked.readAsBytes();
+      setState(() => _pendingImages.add(_PendingImage(picked, bytes)));
     }
+  }
+
+  Future<CarImage> _uploadImage({
+    required String userId,
+    required String carId,
+    required _PendingImage pending,
+    bool isPrimary = false,
+  }) async {
+    final imageId = ImageUtils.generateImageId();
+    final contentType =
+        pending.xfile.mimeType ?? ImageUtils.mimeTypeFromExtension(pending.xfile.name);
+
+    debugPrint('[UPLOAD] userId=$userId carId=$carId imageId=$imageId');
+    debugPrint('[UPLOAD] bytes=${pending.bytes.length} contentType=$contentType');
+
+    final url = await ref.read(storageServiceProvider).uploadCarImage(
+          userId: userId,
+          carId: carId,
+          imageId: imageId,
+          bytes: pending.bytes,
+          contentType: contentType,
+        );
+
+    debugPrint('[UPLOAD] SUCCESS url=$url');
+
+    return CarImage(
+      id: imageId,
+      url: url,
+      storagePath: 'users/$userId/cars/$carId/$imageId.jpg',
+      isPrimary: isPrimary,
+      createdAt: DateTime.now(),
+    );
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null) return;
+    final userId = user.uid;
+    final firestoreService = ref.read(firestoreServiceProvider);
 
     final name = _nameController.text.trim();
     final series = _seriesController.text.trim();
@@ -92,44 +140,64 @@ class _AddEditCarScreenState extends ConsumerState<AddEditCarScreen> {
     final notes = _notesController.text.trim();
     final year = yearText.isEmpty ? null : int.tryParse(yearText);
 
+    debugPrint('[SAVE] pendingImages=${_pendingImages.length} isEditing=${widget.isEditing}');
+
     try {
       if (widget.isEditing) {
-        await ref.read(updateCarProvider.notifier).call(
-              widget.carId!,
-              {
-                'name': name,
-                'series': series,
-                'year': year,
-                'notes': notes,
-              },
-            );
+        await firestoreService.updateCar(userId, widget.carId!, {
+          'name': name,
+          'series': series,
+          'year': year,
+          'notes': notes,
+        });
         // Upload any new images
-        for (final file in _pendingImages) {
-          await ref.read(uploadCarImageProvider.notifier).call(
-                carId: widget.carId!,
-                file: file,
-              );
+        if (_pendingImages.isNotEmpty) {
+          final carData = await ref.read(carStreamProvider(widget.carId!).future);
+          final existingImages = carData?.images ?? [];
+          final newImages = <CarImage>[];
+          for (final pending in _pendingImages) {
+            newImages.add(await _uploadImage(
+              userId: userId,
+              carId: widget.carId!,
+              pending: pending,
+            ));
+          }
+          await firestoreService.updateCar(userId, widget.carId!, {
+            'images': [...existingImages, ...newImages]
+                .map((i) => i.toJson())
+                .toList(),
+          });
         }
       } else {
-        final car = HotWheelsCar(name: name, series: series, year: year, notes: notes);
-        final carId = await ref.read(addCarProvider.notifier).call(car);
-        if (carId != null) {
-          // Upload images for the new car
+        final car = HotWheelsCar(
+            name: name, series: series, year: year, notes: notes);
+        final carId = await firestoreService.addCar(userId, car);
+        // Upload images for the new car
+        if (_pendingImages.isNotEmpty) {
+          final images = <CarImage>[];
           for (var i = 0; i < _pendingImages.length; i++) {
-            await ref.read(uploadCarImageProvider.notifier).call(
-                  carId: carId,
-                  file: _pendingImages[i],
-                  isPrimary: i == 0,
-                );
+            images.add(await _uploadImage(
+              userId: userId,
+              carId: carId,
+              pending: _pendingImages[i],
+              isPrimary: i == 0,
+            ));
           }
+          await firestoreService.updateCar(userId, carId, {
+            'images': images.map((i) => i.toJson()).toList(),
+          });
         }
       }
 
       if (mounted) context.pop();
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('Save error: $e\n$st');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ErrorHandler.userMessage(e))),
+          SnackBar(
+            content: Text('Error: $e'),
+            duration: const Duration(seconds: 10),
+          ),
         );
       }
     }
@@ -208,11 +276,36 @@ class _AddEditCarScreenState extends ConsumerState<AddEditCarScreen> {
                 onRemovePending: (index) {
                   setState(() => _pendingImages.removeAt(index));
                 },
-                onDeleteExisting: (image) {
-                  ref.read(deleteCarImageProvider.notifier).call(
-                        carId: widget.carId!,
-                        image: image,
+                onDeleteExisting: (image) async {
+                  final user = ref.read(authStateProvider).valueOrNull;
+                  if (user == null) return;
+                  final userId = user.uid;
+                  try {
+                    await ref.read(storageServiceProvider).deleteCarImage(
+                          userId: userId,
+                          carId: widget.carId!,
+                          imageId: image.id,
+                        );
+                    final carData = await ref
+                        .read(carStreamProvider(widget.carId!).future);
+                    if (carData != null) {
+                      final updated = carData.images
+                          .where((i) => i.id != image.id)
+                          .toList();
+                      await ref
+                          .read(firestoreServiceProvider)
+                          .updateCar(userId, widget.carId!, {
+                        'images':
+                            updated.map((i) => i.toJson()).toList(),
+                      });
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e')),
                       );
+                    }
+                  }
                 },
               ),
               const SizedBox(height: 8),
@@ -251,7 +344,7 @@ class _ImageGrid extends StatelessWidget {
     required this.onDeleteExisting,
   });
 
-  final List<File> pendingImages;
+  final List<_PendingImage> pendingImages;
   final List<CarImage> existingImages;
   final void Function(int index) onRemovePending;
   final void Function(CarImage image) onDeleteExisting;
@@ -285,7 +378,7 @@ class _ImageGrid extends StatelessWidget {
           }),
           ...pendingImages.asMap().entries.map((entry) {
             return _ImageTile(
-              child: Image.file(entry.value, fit: BoxFit.cover),
+              child: Image.memory(entry.value.bytes, fit: BoxFit.cover),
               onRemove: () => onRemovePending(entry.key),
             );
           }),

@@ -196,7 +196,7 @@ class _CarStreamProviderElement
   String get carId => (origin as CarStreamProvider).carId;
 }
 
-String _$addCarHash() => r'45cd534909d52d7f21f7f0df5603e49292bac7af';
+String _$addCarHash() => r'ddfe3ba13e511e55d786884cea68819756d4289f';
 
 /// See also [AddCar].
 @ProviderFor(AddCar)
@@ -212,7 +212,7 @@ final addCarProvider =
     );
 
 typedef _$AddCar = AutoDisposeAsyncNotifier<String?>;
-String _$updateCarHash() => r'868e4b6fe399c6986727d71a39dae3a9e1c24731';
+String _$updateCarHash() => r'00b98d311a7966dc851923a99ca444f2569fea50';
 
 /// See also [UpdateCar].
 @ProviderFor(UpdateCar)
@@ -228,7 +228,7 @@ final updateCarProvider =
     );
 
 typedef _$UpdateCar = AutoDisposeAsyncNotifier<void>;
-String _$deleteCarHash() => r'4c0a875ec83f12347abb6d6465556d154cd7a097';
+String _$deleteCarHash() => r'dffe5e96cf7705f396f271d5c0f124f218eca229';
 
 /// See also [DeleteCar].
 @ProviderFor(DeleteCar)

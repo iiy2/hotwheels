@@ -6,7 +6,7 @@ part of 'image_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$uploadCarImageHash() => r'8a2ee55e6c22b8e5ab8bc96048767b60f63e3c70';
+String _$uploadCarImageHash() => r'63419432fd4f9fe4aad69695e9673422a68e37b3';
 
 /// See also [UploadCarImage].
 @ProviderFor(UploadCarImage)

@@ -1,7 +1,7 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/car_model.dart';
+import '../../widgets/network_image.dart';
 
 class CarCard extends StatelessWidget {
   const CarCard({
@@ -17,6 +17,7 @@ class CarCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final primaryImage = car.images.where((i) => i.isPrimary).firstOrNull ??
         car.images.firstOrNull;
+    debugPrint('[CARD] car=${car.name} id=${car.id} images=${car.images.length} primaryImage=${primaryImage?.url}');
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -27,11 +28,11 @@ class CarCard extends StatelessWidget {
           children: [
             Expanded(
               child: primaryImage != null
-                  ? CachedNetworkImage(
-                      imageUrl: primaryImage.url,
+                  ? AppNetworkImage(
+                      url: primaryImage.url,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => const _ImagePlaceholder(),
-                      errorWidget: (_, __, ___) => const _ImagePlaceholder(),
+                      placeholder: const _ImagePlaceholder(),
+                      errorWidget: const _ImagePlaceholder(),
                     )
                   : const _ImagePlaceholder(),
             ),

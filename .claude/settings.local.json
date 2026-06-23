@@ -3,7 +3,18 @@
     "allow": [
       "Bash(dart run build_runner build:*)",
       "Bash(flutter analyze:*)",
-      "Bash(flutter test)"
+      "Bash(flutter test)",
+      "Bash(flutter devices:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(flutter run:*)",
+      "Bash(dart analyze:*)",
+      "Bash(gcloud storage buckets describe:*)",
+      "Bash(gcloud storage buckets update:*)",
+      "Bash(gcloud storage ls:*)",
+      "Bash(curl:*)",
+      "Bash(flutter attach:*)"
     ]
   }
 }

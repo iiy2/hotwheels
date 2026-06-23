@@ -40,7 +40,7 @@ final authStateProvider = StreamProvider<User?>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef AuthStateRef = StreamProviderRef<User?>;
-String _$signInHash() => r'91ae7cd7a0d24c7d3ca4b676a83fa2533d5b2e39';
+String _$signInHash() => r'9884ea97c418434598bf5320d0f562bbae0cb6de';
 
 /// See also [SignIn].
 @ProviderFor(SignIn)
@@ -55,7 +55,7 @@ final signInProvider = AutoDisposeAsyncNotifierProvider<SignIn, void>.internal(
 );
 
 typedef _$SignIn = AutoDisposeAsyncNotifier<void>;
-String _$signOutHash() => r'd353f3252ef2ae2acd5cd5fb38d9eea427f4ac69';
+String _$signOutHash() => r'874f3e41727c8e3f98180de54db6987e92784945';
 
 /// See also [SignOut].
 @ProviderFor(SignOut)
